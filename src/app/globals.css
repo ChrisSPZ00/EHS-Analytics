@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+/* ---------------------------------------------------------------------------
+   Hierarchy of controls colour ramp
+   ---------------------------------------------------------------------------
+   Single-hue ramp: deepest green = most effective (Elimination, rank 1),
+   yellow-green = least effective (PPE, rank 5). Token 0 is Unclassified and sits
+   OUTSIDE the ramp in neutral grey -- it is the absence of a classification, not a
+   position on the ladder, and must never be rendered as one.
+
+   These pairs are deliberately NOT theme-reactive. The ramp encodes meaning, so it
+   holds its values in light and dark alike. Every pair is verified against WCAG AA
+   (4.5:1) for normal text by `npm run verify:contrast` -- change a value and the
+   check fails.
+
+   Colour alone never carries the meaning: every badge renders its label text. A
+   five-step single-hue ramp is not reliably distinguishable under red-green colour
+   vision deficiency, and the same rule we would apply to hazard signage applies to
+   our own UI.
+   --------------------------------------------------------------------------- */
+:root {
+  --hoc-1-bg: #14532D;  --hoc-1-fg: #FFFFFF;  /* Elimination    */
+  --hoc-2-bg: #256B31;  --hoc-2-fg: #FFFFFF;  /* Substitution   */
+  --hoc-3-bg: #7CB342;  --hoc-3-fg: #1B3300;  /* Engineering    */
+  --hoc-4-bg: #BCD455;  --hoc-4-fg: #263300;  /* Administrative */
+  --hoc-5-bg: #E8EE85;  --hoc-5-fg: #3D4A00;  /* PPE            */
+  --hoc-0-bg: #E5E7EB;  --hoc-0-fg: #374151;  /* Unclassified   */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* Exposed as utilities: bg-hoc-3-bg, text-hoc-3-fg, border-hoc-3-bg, ... */
+  --color-hoc-0-bg: var(--hoc-0-bg);
+  --color-hoc-0-fg: var(--hoc-0-fg);
+  --color-hoc-1-bg: var(--hoc-1-bg);
+  --color-hoc-1-fg: var(--hoc-1-fg);
+  --color-hoc-2-bg: var(--hoc-2-bg);
+  --color-hoc-2-fg: var(--hoc-2-fg);
+  --color-hoc-3-bg: var(--hoc-3-bg);
+  --color-hoc-3-fg: var(--hoc-3-fg);
+  --color-hoc-4-bg: var(--hoc-4-bg);
+  --color-hoc-4-fg: var(--hoc-4-fg);
+  --color-hoc-5-bg: var(--hoc-5-bg);
+  --color-hoc-5-fg: var(--hoc-5-fg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
