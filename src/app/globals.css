@@ -32,6 +32,12 @@
   /* Ink for anything sitting on a gold or teal fill. */
   --brand-on-accent: #010133;
 
+  /* Brand ink for the wordmark. Theme-reactive, unlike --brand-primary: the
+     primary navy is 10.36:1 on white but only ~2:1 on the dark page, so the
+     wordmark steps up to the lighter brand blue in dark mode rather than
+     dissolving into the background. */
+  --brand-ink: #1E3A8A;
+
   --background: #ffffff;
   --foreground: #010133;
 
@@ -160,6 +166,7 @@
   --color-brand-gold-metallic: var(--brand-gold-metallic);
   --color-brand-teal: var(--brand-teal);
   --color-brand-on-accent: var(--brand-on-accent);
+  --color-brand-ink: var(--brand-ink);
   --color-on-primary: var(--on-primary);
   --color-on-primary-muted: var(--on-primary-muted);
 
@@ -200,6 +207,9 @@
 
     --on-primary: #ffffff;
     --on-primary-muted: #ccd6ee;
+
+    /* 5.63:1 on the dark page, against 1.99:1 for the primary navy. */
+    --brand-ink: #3987e5;
 
     /* The same four hues re-stepped for the dark surface, not an automatic flip.
        Validated against #010133: worst adjacent CVD ΔE 8.4, all four clear 3:1. */

@@ -7,19 +7,21 @@ import { cn } from '@/lib/utils';
  * Supplied artwork is picked up from `public/brand/` at build time (see
  * `next.config.ts` and `docs/brand-assets.md`). Two slots:
  *
- *   logo.*            the primary lockup, for white/light surfaces
- *   logo-reversed.*   the knockout version, for the navy nav bar
+ *   logo.*            the primary lockup, for light surfaces
+ *   logo-reversed.*   the knockout version, for dark surfaces
  *
- * When a slot is empty the built-in `LogoMark` below stands in. That fallback is
- * deliberately generic geometry from the brand palette — it is a placeholder, not
- * an invented mark, and nothing should be mistaken for the real logo.
+ * The rule is that a file is only ever shown on the surface it was made for. A
+ * lockup with an opaque white background renders as a white box on the navy nav
+ * or on the dark-mode page, and there is no CSS that removes a baked-in
+ * background — so with the reversed slot empty, every dark surface falls back to
+ * the built-in mark plus the typographic wordmark instead of showing the light
+ * artwork somewhere it does not belong. That fallback is deliberately generic
+ * geometry from the brand palette: a placeholder, not an invented mark.
  *
- * The two slots are separate on purpose. The supplied lockup has an opaque white
- * background, so dropping it onto the navy header would render a white box around
- * the mark. Artwork for a dark surface has to be artwork made for a dark surface;
- * there is no CSS that removes a baked-in background. Until a reversed version
- * exists the nav keeps the placeholder mark and the typographic wordmark, which
- * both sit at 10.36:1 on the navy.
+ * Dark surfaces are of two kinds and both are covered: the navy nav (always dark,
+ * selected by `tone="onPrimary"`) and the page in dark mode (selected by the
+ * `dark:` variant). Print forces a white page regardless of theme, so the print
+ * variants pin it back to the light artwork.
  */
 
 const LOGO = process.env.NEXT_PUBLIC_BRAND_LOGO || '';
@@ -50,7 +52,7 @@ export function LogoMark({ className }: { className?: string }) {
 /**
  * Supplied artwork. Rendered with a plain <img> rather than next/image: the file
  * is dropped in by hand, so its intrinsic dimensions are not known at build time,
- * and an SVG lockup gains nothing from the optimiser. `h-* w-auto` lets a wide
+ * and an SVG lockup gains nothing from the optimiser. `h-8 w-auto` lets a wide
  * horizontal lockup keep its own aspect ratio instead of being forced square.
  */
 function LogoAsset({ src, className }: { src: string; className?: string }) {
@@ -59,29 +61,21 @@ function LogoAsset({ src, className }: { src: string; className?: string }) {
     <img
       src={src}
       alt="SafePulse Analytics"
-      className={cn('w-auto max-w-[13rem] shrink-0 object-contain', className)}
+      className={cn('h-8 w-auto max-w-[13rem] shrink-0 object-contain', className)}
     />
   );
 }
 
-export function Logo({
+/** Built-in stand-in: the placeholder mark and the typographic wordmark. */
+function LogoFallback({
   className,
-  withWordmark = true,
-  tone = 'default',
+  withWordmark,
+  tone,
 }: {
   className?: string;
-  withWordmark?: boolean;
-  /** `onPrimary` for the navy nav bar, where the wordmark must be white. */
-  tone?: 'default' | 'onPrimary';
+  withWordmark: boolean;
+  tone: 'default' | 'onPrimary';
 }) {
-  const asset = tone === 'onPrimary' ? LOGO_REVERSED : LOGO;
-
-  // A supplied lockup already contains the wordmark, so the typographic one is
-  // dropped rather than doubled up alongside it.
-  if (asset) {
-    return <LogoAsset src={asset} className={cn('h-8', className)} />;
-  }
-
   return (
     <span className={cn('inline-flex items-center gap-2', className)}>
       <LogoMark />
@@ -89,7 +83,9 @@ export function Logo({
         <span
           className={cn(
             'text-base font-semibold leading-none tracking-tight',
-            tone === 'onPrimary' ? 'text-on-primary' : 'text-brand-primary',
+            // --brand-ink steps up in dark mode; --brand-primary would sit at
+            // about 2:1 on the dark page.
+            tone === 'onPrimary' ? 'text-on-primary' : 'text-brand-ink',
           )}
         >
           SafePulse
@@ -105,5 +101,60 @@ export function Logo({
         </span>
       ) : null}
     </span>
+  );
+}
+
+export function Logo({
+  className,
+  withWordmark = true,
+  tone = 'default',
+}: {
+  className?: string;
+  withWordmark?: boolean;
+  /** `onPrimary` for the navy nav bar, which is dark in both themes. */
+  tone?: 'default' | 'onPrimary';
+}) {
+  // The nav is navy in both themes, so it only ever wants reversed artwork.
+  if (tone === 'onPrimary') {
+    return LOGO_REVERSED ? (
+      <LogoAsset src={LOGO_REVERSED} className={className} />
+    ) : (
+      <LogoFallback className={className} withWordmark={withWordmark} tone={tone} />
+    );
+  }
+
+  // With no artwork at all there is nothing to switch between — the fallback is
+  // already theme-reactive, so don't emit it twice.
+  if (!LOGO && !LOGO_REVERSED) {
+    return <LogoFallback className={className} withWordmark={withWordmark} tone="default" />;
+  }
+
+  // A page surface: light artwork in light mode and in print, reversed artwork in
+  // dark mode. Whichever slot is empty falls back rather than borrowing the other.
+  const light = LOGO ? (
+    <LogoAsset src={LOGO} className={cn('dark:hidden print:block', className)} />
+  ) : (
+    <LogoFallback
+      className={cn('dark:hidden print:inline-flex', className)}
+      withWordmark={withWordmark}
+      tone="default"
+    />
+  );
+
+  const dark = LOGO_REVERSED ? (
+    <LogoAsset src={LOGO_REVERSED} className={cn('hidden dark:block print:hidden', className)} />
+  ) : (
+    <LogoFallback
+      className={cn('hidden dark:inline-flex print:hidden', className)}
+      withWordmark={withWordmark}
+      tone="default"
+    />
+  );
+
+  return (
+    <>
+      {light}
+      {dark}
+    </>
   );
 }

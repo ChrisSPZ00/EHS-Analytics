@@ -107,6 +107,7 @@ console.table(rows);
 const BRAND_TEXT_PAIRS = [
   { name: 'Body ink on page', fg: '#010133', bg: '#FFFFFF' },
   { name: 'Primary link/button text', fg: '#1E3A8A', bg: '#FFFFFF' },
+  { name: 'Wordmark ink on page', fg: '#1E3A8A', bg: '#FFFFFF' },
   { name: 'Nav label on primary', fg: '#FFFFFF', bg: '#1E3A8A' },
   { name: 'Nav muted label on primary', fg: '#CCD6EE', bg: '#1E3A8A' },
   { name: 'White on primary button', fg: '#FFFFFF', bg: '#1E3A8A' },
@@ -119,6 +120,8 @@ const BRAND_TEXT_PAIRS = [
   { name: 'Dark: body ink on card', fg: '#F2F4FB', bg: '#010133' },
   { name: 'Dark: muted ink on card', fg: '#B3BBD6', bg: '#010133' },
   { name: 'Dark: ink on gold button', fg: '#010133', bg: '#FDB515' },
+  { name: 'Dark: wordmark ink on page', fg: '#3987e5', bg: '#000019' },
+  { name: 'Dark: wordmark ink on card', fg: '#3987e5', bg: '#010133' },
   // Status callouts, both modes. These stay semantic rather than brand-coloured, so a
   // warning never reads as a gold accent.
   { name: 'Danger callout (light)', fg: '#b91c1c', bg: '#fef2f2' },
