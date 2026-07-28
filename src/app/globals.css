@@ -25,6 +25,36 @@
   --success: #166534;
   --success-bg: #f0fdf4;
   --success-border: #bbf7d0;
+
+  /* ---------------------------------------------------------------------
+     Chart palette
+     ---------------------------------------------------------------------
+     Categorical slots in FIXED order — a series keeps its hue when a filter
+     removes its neighbours, so "recordables are blue" stays true. Four slots
+     is the cap here; nothing cycles or generates a ninth colour.
+
+     Validated for CVD separation and contrast against this surface, in both
+     modes, rather than eyeballed. Light mode: worst adjacent CVD ΔE 9.1,
+     normal-vision ΔE 22.9. Aqua and yellow fall below 3:1 on white, so every
+     chart ships a table view and visible labels — the relief rule.
+     --------------------------------------------------------------------- */
+  --chart-1: #2a78d6;  /* blue    */
+  --chart-2: #eb6834;  /* orange  */
+  --chart-3: #1baf7a;  /* aqua    */
+  --chart-4: #eda100;  /* yellow  */
+
+  /* Single-hue sequential ramp, light -> dark, for the department heatmap. */
+  --chart-seq-100: #cde2fb;
+  --chart-seq-250: #86b6ef;
+  --chart-seq-400: #3987e5;
+  --chart-seq-550: #1c5cab;
+  --chart-seq-700: #0d366b;
+
+  --chart-grid: #e1e0d9;
+  --chart-axis: #c3c2b7;
+  --chart-ink: #52514e;
+  /* Stacked segments are separated by a gap in the surface colour, never a border. */
+  --chart-surface: #ffffff;
 }
 
 /* ---------------------------------------------------------------------------
@@ -97,6 +127,24 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+
+    --card: #141414;
+    --muted: #1e1e1e;
+    --muted-foreground: #a1a1aa;
+    --border: #2c2c2a;
+    --input: #3f3f46;
+
+    /* The same four hues re-stepped for the dark surface, not an automatic flip.
+       Validated against #0a0a0a: worst adjacent CVD ΔE 8.4, all four clear 3:1. */
+    --chart-1: #3987e5;
+    --chart-2: #d95926;
+    --chart-3: #199e70;
+    --chart-4: #c98500;
+
+    --chart-grid: #2c2c2a;
+    --chart-axis: #383835;
+    --chart-ink: #c3c2b7;
+    --chart-surface: #141414;
   }
 }
 
@@ -104,4 +152,49 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ---------------------------------------------------------------------------
+   Print
+   ---------------------------------------------------------------------------
+   The PDF report is the real page printed, not a separate rendering path, so
+   what the client receives always matches what was on screen. Chart fills are
+   forced to print because a report of empty outlines is useless.
+   --------------------------------------------------------------------------- */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 14mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+  }
+
+  /* Screen-only furniture. */
+  header.app-chrome,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  /* Keep a card and its chart on one page where possible. */
+  section,
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+
+  .print-break-before {
+    break-before: page;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 }

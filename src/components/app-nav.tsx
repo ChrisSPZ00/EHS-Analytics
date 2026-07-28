@@ -27,7 +27,7 @@ export function AppNav({
   const pathname = usePathname();
 
   return (
-    <header className="border-b border-border bg-card">
+    <header className="app-chrome border-b border-border bg-card">
       <div className="mx-auto flex w-full max-w-[100rem] flex-wrap items-center gap-x-6 gap-y-2 p-4">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold leading-tight">{orgName}</p>

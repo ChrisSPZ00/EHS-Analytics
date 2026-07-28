@@ -27,6 +27,7 @@ npm run typecheck        # tsc --noEmit
 npm run lint             # eslint
 npm run verify:contrast  # WCAG AA on the hierarchy-of-controls tokens (runs in build)
 npm run verify:import    # CSV import pipeline against a deliberately messy fixture
+npm run verify:metrics   # metric formulas, incl. a cross-check against SQL-derived figures
 ```
 
 ## Build status
@@ -35,7 +36,7 @@ npm run verify:import    # CSV import pipeline against a deliberately messy fixt
 | --- | --- | --- |
 | 1 | Schema and RLS foundation | Complete |
 | 2 | Incident Log (table, forms, CSV import) | Complete |
-| 3 | Incident Dashboard | Not started |
+| 3 | Incident Dashboard | Complete |
 | 4 | Compliance Calendar | Not started |
 | 5 | Polish, seed data, deploy | Not started |
 
@@ -250,3 +251,97 @@ rows and reclassifying zero of the first tenant's actions.
 > this environment's network policy does not allow egress to `*.supabase.co`, so the running
 > app cannot reach the database from inside the container. Adding that host to the
 > environment's egress settings would allow a full browser run.
+
+---
+
+## Phase 3 — Incident Dashboard
+
+### The metric layer
+
+Metrics are pure functions over an aggregate, in `src/lib/metrics/definitions.ts`. Each
+one carries its formula, the actual input values, and — for the regulatory rates — its
+citation, so the UI can always show its working. Being pure is what makes them directly
+testable against known inputs rather than eyeballed on a chart.
+
+Two data-integrity rules run through all of it:
+
+- **Nothing is annualised, projected or extrapolated.** Every figure is an actual for the
+  filtered period.
+- **A missing denominator is never zero and never estimated.** If any month in the
+  filtered range is missing an `hours_worked` row for a site in scope, the rate is `null`
+  and the card renders an em dash with the reason and the missing months named. The
+  monthly TRIR line breaks at those months rather than dropping to zero.
+
+Every rate card shows its denominator directly beneath the value.
+
+### KPIs
+
+Regulatory rates (badged **OSHA**, each with a 29 CFR 1904 citation): TRIR, DART, LTIFR,
+Severity Rate.
+
+Program signals — deliberately separated in the UI and explicitly *not* compliance
+metrics: Days Since Last LTI / MTI, % Hazard Yield, Near Miss Ratio, Corrective Action
+Closure, and % of corrective actions at Engineering or above.
+
+**% Hazard Yield** flags itself when it reads zero: inspections happening but finding
+nothing is an inspection-quality problem, not evidence of a safe site.
+
+**% at Engineering or above** = (rank 1 + 2 + 3) ÷ actions *that have a classification*.
+Unclassified records are excluded from the denominator, not counted as a miss. Coverage
+is always stated beneath the value — "Based on N of M actions classified (X%)" — and
+below 50% coverage the card renders muted with "Low coverage — interpret with caution."
+
+### Charts
+
+Monthly trend (stacked mix + TRIR overlay), leading vs lagging, corrective actions by
+hierarchy level, injury Pareto, body part, root cause, tenure at incident, department ×
+type heatmap, and cost by department.
+
+Colour decisions were computed rather than eyeballed. The four categorical slots were run
+through a CVD/contrast validator against this app's actual surfaces in both modes — worst
+adjacent CVD ΔE 9.1 light / 8.4 dark, normal-vision ΔE 22.9 / 19.8. Two light-mode slots
+fall below 3:1 on white, which obligates relief: **every chart has a table-view twin**, so
+no value is reachable only by hovering and no meaning rests on colour alone.
+
+Series colours are fixed per entity, so filtering a series out never repaints the
+survivors. The heatmap uses a single-hue sequential ramp with the counts printed in the
+cells. Stacked segments are separated by a gap in the surface colour rather than by
+borders.
+
+The hierarchy-of-controls ramp is a deliberate exception to the categorical rules: it is a
+single-hue ordinal scale, which is not separable under red-green colour vision deficiency,
+and its palest steps sit close to the page. Both are mitigated as the spec requires —
+every segment labelled, the legend carrying rank and label text, a surface-coloured gap
+giving the pale steps a visible edge, and the table view holding every number. The
+mandated hex values are unchanged.
+
+### Report export
+
+`/dashboard/report` renders the filtered view with a header block (client, site,
+department, reporting period, generated timestamp), every metric with its formula and
+inputs expanded, and print CSS for A4. It prints via the browser rather than a server-side
+PDF library, so the report is always the same rendering the user was looking at, with
+selectable text and no second code path to drift.
+
+### Demo data
+
+`supabase/seed.sql` builds a synthetic demo organisation — 2 sites, 8 departments, 60
+employees, 300 incidents over five years, complete monthly hours and leading indicators,
+and 60 corrective actions with ~30% deliberately left unclassified. It is deterministic
+and destructive only to the demo org. Login: `demo@example.test` / `safepulse-demo`.
+
+### Verification
+
+`npm run verify:metrics` runs 70 assertions: the OSHA arithmetic against worked examples,
+every missing-hours path, the maturity denominator rules and coverage thresholds, the
+divide-by-zero guards, and the month-range maths behind hours coverage.
+
+The last block is a cross-check against the database: the 2025 aggregate was computed in
+SQL on the seeded data — recordables by type, DART off the view's own `is_dart_case`,
+control levels off `hoc_rank` — and those exact inputs are fed back through the TypeScript
+formulas. SQL says TRIR 3.1484; the formula layer agrees. That proves the two sides match
+rather than each being internally consistent but different.
+
+The chart layer was rendered in a browser against fixture data and inspected in both light
+and dark mode: 22 chart surfaces, no console errors, the TRIR line correctly breaking at
+months with no hours, and Unclassified rendering as its own grey segment outside the ramp.

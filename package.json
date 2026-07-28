@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "verify:contrast": "node scripts/verify-contrast.mjs",
     "types:generate": "echo \"Regenerate via the Supabase MCP generate_typescript_types tool, or: supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > src/lib/supabase/database.types.ts\"",
-    "verify:import": "tsx scripts/verify-import-pipeline.ts"
+    "verify:import": "tsx scripts/verify-import-pipeline.ts",
+    "verify:metrics": "tsx scripts/verify-metrics.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.5.7",
@@ -26,6 +27,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-hook-form": "^7.83.0",
+    "recharts": "^3.10.1",
     "tailwind-merge": "^3.6.0",
     "zod": "^4.4.3"
   },
