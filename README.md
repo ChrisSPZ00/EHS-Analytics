@@ -161,4 +161,4 @@ because RLS policy expressions are evaluated as the querying role, and each repo
 facts about the caller's own session; `bootstrap_organization` and
 `add_member_to_current_org` *are* the membership API and perform their own authorization
 checks. The reasoning is recorded in
-`supabase/migrations/20260728120011_restrict_trigger_function_execute.sql`.
+`supabase/migrations/20260728155756_restrict_trigger_function_execute.sql`.
