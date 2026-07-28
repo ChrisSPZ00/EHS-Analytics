@@ -122,6 +122,14 @@ const BRAND_TEXT_PAIRS = [
   { name: 'Dark: ink on gold button', fg: '#010133', bg: '#FDB515' },
   { name: 'Dark: wordmark ink on page', fg: '#3987e5', bg: '#000019' },
   { name: 'Dark: wordmark ink on card', fg: '#3987e5', bg: '#010133' },
+  // Accent wording. Pure #14B8A6 is 2.49:1 on white, so light mode uses the
+  // darkened step and dark mode uses the pure hue.
+  { name: 'Accent text on page', fg: '#0F766E', bg: '#FFFFFF' },
+  { name: 'Dark: accent text on page', fg: '#14B8A6', bg: '#000019' },
+  { name: 'Dark: accent text on card', fg: '#14B8A6', bg: '#010133' },
+  // Logotype lettering on dark surfaces, which is held to the same bar as text.
+  { name: 'Logotype green on primary', fg: '#7BD69A', bg: '#1E3A8A' },
+  { name: 'Dark: logotype green on page', fg: '#7BD69A', bg: '#000019' },
   // Status callouts, both modes. These stay semantic rather than brand-coloured, so a
   // warning never reads as a gold accent.
   { name: 'Danger callout (light)', fg: '#b91c1c', bg: '#fef2f2' },
@@ -147,6 +155,33 @@ const brandRows = BRAND_TEXT_PAIRS.map((pair) => {
 
 console.log(`\nBrand text pairs (normal text, >= ${AA_NORMAL_TEXT}:1)`);
 console.table(brandRows);
+
+/*
+ * Logotype exemption.
+ *
+ * WCAG 1.4.3 exempts "text that is part of a logo or brand name" from the
+ * contrast minimum. The ANALYTICS lettering in the mark is brand green on white
+ * and lands below AA. It is listed here rather than omitted so the exemption is
+ * a visible, deliberate decision instead of a gap — and so that anyone tempted to
+ * reuse this green for ordinary text sees the number first.
+ *
+ * The exemption covers the logo only. Everywhere else the green is a fill, and
+ * accent wording uses --brand-accent-text, which is checked above.
+ */
+const LOGOTYPE_EXEMPT = [
+  { name: 'ANALYTICS lettering on white (logo only)', fg: '#3BA55C', bg: '#FFFFFF' },
+];
+
+console.log('\nLogotype — exempt from AA under WCAG 1.4.3, listed for visibility');
+console.table(
+  LOGOTYPE_EXEMPT.map((pair) => ({
+    pair: pair.name,
+    fg: pair.fg,
+    bg: pair.bg,
+    ratio: `${contrastRatio(pair.fg, pair.bg).toFixed(2)}:1`,
+    AA: 'EXEMPT',
+  })),
+);
 
 if (failures > 0) {
   console.error(

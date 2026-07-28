@@ -58,12 +58,14 @@ deficiency, and this is a safety product.
 
 Palette tokens live at the top of `globals.css` with the measured contrast of each
 colour beside it. The golds and the teal sit at 1.78–2.71:1 on white, so they are fills
-and rules only — never text on a light surface. `verify:contrast` checks every pair the
-UI renders words in, both modes.
+and rules only — never text on a light surface; accent wording uses
+`--brand-accent-text`. `verify:contrast` checks every pair the UI renders words in, both
+modes, and prints the logotype exemption explicitly rather than omitting it.
 
-Logo artwork is a drop-in at `public/brand/` (primary + reversed), detected at start-up
-and rendered through `src/components/brand/logo.tsx` — the single seam for nav, sign-in
-and the printed report. See `docs/brand-assets.md`.
+The logo is vector, drawn in `src/components/brand/logo.tsx` — the single seam for nav,
+sign-in and the printed report. Official raster artwork dropped into `public/brand/`
+takes precedence. Fonts are Montserrat (headings) and Source Sans 3 (body), self-hosted
+by `next/font`. See `docs/brand-assets.md`.
 
 ## Next.js version note
 

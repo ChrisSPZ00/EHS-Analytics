@@ -27,7 +27,22 @@
   --brand-gold: #FDB515;        /* California Gold  */
   --brand-gold-heritage: #C09748;
   --brand-gold-metallic: #BC9B6A;
-  --brand-teal: #14B8A6;        /* supplied as "Light Blue" */
+  --brand-teal: #14B8A6;        /* accent per the brand sheet */
+
+  /* Teal is 2.49:1 on white, so it cannot be link or CTA *text* even though the
+     brand sheet lists those uses. This is the same hue darkened to 5.40:1 for
+     wording; #14B8A6 itself stays for fills, rules and active-state bars. */
+  --brand-accent-text: #0F766E;
+
+  /* The logo gradient runs navy at the baseline to green at the peak. The green
+     is logotype colour: it appears in the mark and in the "ANALYTICS" lettering
+     and nowhere else. At 3.12:1 on white it is below AA for body text, which is
+     why it is confined to the logo — WCAG exempts logotype lettering, but the
+     exemption does not travel to ordinary text. */
+  --brand-green: #3BA55C;
+  --brand-green-mid: #1E7F7A;
+  /* Light green for the logo on dark surfaces: 5.82:1 on the navy nav. */
+  --brand-green-reversed: #7BD69A;
 
   /* Ink for anything sitting on a gold or teal fill. */
   --brand-on-accent: #010133;
@@ -138,8 +153,12 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  /* Source Sans 3 is the default face; Montserrat is opt-in via `font-heading`
+     and applied to headings globally below. */
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
 
   --color-card: var(--card);
   --color-muted: var(--muted);
@@ -167,6 +186,9 @@
   --color-brand-teal: var(--brand-teal);
   --color-brand-on-accent: var(--brand-on-accent);
   --color-brand-ink: var(--brand-ink);
+  --color-brand-accent-text: var(--brand-accent-text);
+  --color-brand-green: var(--brand-green);
+  --color-brand-green-reversed: var(--brand-green-reversed);
   --color-on-primary: var(--on-primary);
   --color-on-primary-muted: var(--on-primary-muted);
 
@@ -211,6 +233,10 @@
     /* 5.63:1 on the dark page, against 1.99:1 for the primary navy. */
     --brand-ink: #3987e5;
 
+    /* The darkened teal is only 3.39:1 on the dark card, so accent wording goes
+       back to the pure brand teal here — 7.35:1. */
+    --brand-accent-text: #14B8A6;
+
     /* The same four hues re-stepped for the dark surface, not an automatic flip.
        Validated against #010133: worst adjacent CVD ΔE 8.4, all four clear 3:1. */
     --chart-1: #3987e5;
@@ -248,7 +274,26 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+}
+
+/* Montserrat on headings and nav labels, per the brand sheet. Applied here rather
+   than as a class on every heading so a new page cannot forget it. Numeric
+   readouts — KPI values, table figures — stay on the body face and get tabular
+   figures, because a rate that shifts width as it updates is hard to scan. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-heading {
+  font-family: var(--font-heading), Arial, Helvetica, sans-serif;
+}
+
+table,
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------------------------------------------------------------------------
