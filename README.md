@@ -20,12 +20,21 @@ cp .env.example .env.local   # fill in from the Supabase dashboard
 npm run dev
 ```
 
+## Checks
+
+```bash
+npm run typecheck        # tsc --noEmit
+npm run lint             # eslint
+npm run verify:contrast  # WCAG AA on the hierarchy-of-controls tokens (runs in build)
+npm run verify:import    # CSV import pipeline against a deliberately messy fixture
+```
+
 ## Build status
 
 | Phase | Scope | State |
 | --- | --- | --- |
 | 1 | Schema and RLS foundation | Complete |
-| 2 | Incident Log (table, forms, CSV import) | Not started |
+| 2 | Incident Log (table, forms, CSV import) | Complete |
 | 3 | Incident Dashboard | Not started |
 | 4 | Compliance Calendar | Not started |
 | 5 | Polish, seed data, deploy | Not started |
@@ -162,3 +171,82 @@ facts about the caller's own session; `bootstrap_organization` and
 `add_member_to_current_org` *are* the membership API and perform their own authorization
 checks. The reasoning is recorded in
 `supabase/migrations/20260728155756_restrict_trigger_function_execute.sql`.
+
+---
+
+## Phase 2 — Incident Log
+
+### Auth
+
+No phase specifies authentication, but nothing in Phase 2 is reachable without it, so the
+minimum is in place: email/password sign-in, sign-up, an onboarding step that calls
+`bootstrap_organization()`, and middleware that refreshes the session cookie.
+
+The middleware redirect is UX only, **not** the security boundary — RLS is. Middleware
+decides which page you land on; it never decides which rows you can see. Both Supabase
+clients use the publishable key and the caller's session; there is no service-role client
+in the app, so no request path can bypass tenant isolation.
+
+### The log
+
+Filters (date range, site, department, type, classification, shift, severity, free text)
+live in the URL rather than component state, which makes a view shareable, refresh-proof,
+and lets CSV export be a plain link reusing the same query string. Sorting and pagination
+are server-side — `applyIncidentFilters()` is the single query builder shared by the page
+and the export route.
+
+The export walks the result set in 1,000-row pages so memory stays flat, and quotes any
+value starting with `=`, `+`, `-` or `@` so a description cannot execute as a formula when
+the client opens the file.
+
+### CSV / XLSX import
+
+Five steps: upload → map columns → map values → review → commit. Nothing is written until
+the final step.
+
+- **Column matching** is exact-alias first, then fuzzy (Levenshtein), one field per column.
+- **Value matching** covers near-misses like `Recordable → OSHA Recordable`, plus an alias
+  table for synonyms edit distance cannot bridge (`1st → First`, `Lost Time → LTI`).
+- **Dates** accept month-first, day-first, ISO, two-digit years and Excel serials.
+  Genuinely unreadable values are rejected, never guessed.
+- **Duplicates** are detected on `incident_date + employee_ref + injury_type`, against both
+  the database and earlier rows in the same file, and skipped unless you opt in.
+- **Sites, departments and employees** referenced but not on file are created at commit.
+  The review step states exactly how many of each, so it is confirmed rather than silent.
+- **The validation report is a client deliverable**, downloadable as CSV with every row's
+  status and issues; rejected rows download separately with their original cells intact.
+
+Every suggestion is a suggestion. Nothing is applied to a row until it is accepted in the
+mapping step.
+
+### Hierarchy of controls
+
+- Badges always render the label text; `density="dense"` prefixes the rank
+  (`3 · Engineering`, `— · Unclassified`). Colour never carries the meaning alone.
+- The corrective-action form renders the five levels as a vertical stack in rank order with
+  swatch and description, "Not classified yet" at the bottom, and **nothing preselected**.
+- On import, an unrecognised control value imports as `null` — never as a nearest match —
+  and a missing classification raises no warning and rejects nothing.
+- The needs-classification queue lists unclassified actions newest-incident-first and
+  assigns inline. Clearing a level back to unclassified is supported, so a mis-click is
+  recoverable rather than sticky.
+
+### Verification
+
+`npm run verify:import` runs 53 assertions over `fixtures/messy-incidents.csv`, a synthetic
+sheet built to be awkward: four date formats, an unparseable date, a day-first date, a
+duplicate row, a missing site, unrecognised control values, and enum spellings that do not
+match ours. It asserts the spec's explicit rules, including that suggestions never
+auto-apply and that `housekeeping` stays unclassified rather than snapping to a level.
+
+The database write path was verified separately against the live schema in a transaction
+that rolls back: `organization_id` stamped by trigger from a payload that never contains
+it, a corrective action saving with a NULL control level, the enriched view reporting
+Unclassified as rank `null` / sort `999` / token `0` / `is_engineering_or_above` `null`,
+the queue responding to inline assignment and to clearing, and a second tenant seeing zero
+rows and reclassifying zero of the first tenant's actions.
+
+> **Note on end-to-end browser testing.** The two halves were verified separately because
+> this environment's network policy does not allow egress to `*.supabase.co`, so the running
+> app cannot reach the database from inside the container. Adding that host to the
+> environment's egress settings would allow a full browser run.

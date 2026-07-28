@@ -1,0 +1,11 @@
+Date of Injury,Facility,Dept,Emp #,Employee Name,Date of Hire,Type,Class,Shift Worked,Nature of Injury,Part of Body,Cause,Days Lost,Restricted Days,Lost Time,Severity,Claim #,What Happened,Action Taken,Control Type
+3/14/2024,Plant 2,Packaging,EMP-0417,Dana Okafor,6/1/2019,Recordable,LTI,1st,Strain,Back,Unsafe Act,5,3,Yes,3 - Significant,WC-1001,Lifted a carton from floor level,Installed a lift table at the pack-out station,engineering control
+03/22/2024,Plant 2,Packaging,EMP-0418,Sam Iyer,2015-08-17,First Aid,FAI,Second,Cut/Laceration,Finger,Unsafe Condition,0,0,No,2 - Minor,,Caught finger on a burr,Toolbox talk on inspecting edges,training
+2024-04-02,Plant 1,Maintenance,EMP-0102,Robin Vale,4/3/2023,Near Miss,Near Miss,Third,,,Management System,0,0,No,1 - Insignificant,,Ladder was not tied off,Replaced ladder with a fixed platform,eliminate
+4/2/2024,Plant 1,Maintenance,EMP-0102,Robin Vale,4/3/2023,Near Miss,Near Miss,Third,,,Management System,0,0,No,1 - Insignificant,,Ladder was not tied off,Replaced ladder with a fixed platform,eliminate
+25/12/2024,Plant 1,Shipping,EMP-0311,Alex Moreno,2021-01-04,Property Damage,Property Damage,First,,,Unsafe Act,0,0,No,2 - Minor,,Forklift clipped a rack upright,Repainted floor markings,admin
+5/9/2024,Plant 3,Blending,EMP-0555,Jamie Cruz,2022-11-30,OSHA Recordable,MTI,First,Chemical,Eye,Unsafe Condition,0,7,No,4 - Major,WC-1002,Splash while transferring caustic,Fitted a closed-transfer coupling,Engineering
+not a date,Plant 2,Packaging,EMP-0419,Kit Alvarez,2020-03-15,First Aid,FAI,First,Bruise/Contusion,Knee,Unsafe Act,0,0,No,2 - Minor,,Bumped into a pallet,Housekeeping sweep,housekeeping
+6/18/2024,Plant 2,Packaging,EMP-0420,Noor Haddad,2018-07-22,Hazard,Hazard,Second,,,Environmental,0,0,No,,,Standing water near the wash bay,Added floor drain grating,
+7/1/2024,Plant 3,Blending,EMP-0556,Rey Santos,2023-05-08,Recordable,MTI,Third,Burn,Hand,Personnel/Behavioral,2,4,No,3 - Significant,WC-1003,Contact with a steam line,Insulated the line and added a guard,personal protective equipment
+8/12/2024,,Shipping,EMP-0312,Wren Baptiste,2019-09-09,First Aid,FAI,First,Puncture,Foot,Unsafe Condition,0,0,No,2 - Minor,,Stepped on a staple,Issued puncture-resistant insoles,ppe
