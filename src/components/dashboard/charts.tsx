@@ -212,7 +212,7 @@ export function InjuryParetoChart({ data }: { data: ParetoPoint[] }) {
           content={<TooltipBox formatter={(v, n) => (v === null ? '—' : n === 'Cumulative' ? `${v.toFixed(0)}%` : String(v))} />}
           cursor={{ fill: 'var(--chart-grid)', opacity: 0.35 }}
         />
-        <Bar dataKey="count" name="Cases" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="count" name="Cases" fill="var(--chart-single)" radius={[4, 4, 0, 0]} />
         <Line
           yAxisId="pct"
           type="monotone"
@@ -246,7 +246,7 @@ export function HorizontalCountChart({
         <XAxis type="number" {...AXIS} allowDecimals={false} />
         <YAxis type="category" dataKey="label" {...AXIS} width={110} />
         <Tooltip content={<TooltipBox />} cursor={{ fill: 'var(--chart-grid)', opacity: 0.35 }} />
-        <Bar dataKey="count" name="Cases" fill="var(--chart-1)" radius={[0, 4, 4, 0]} />
+        <Bar dataKey="count" name="Cases" fill="var(--chart-single)" radius={[0, 4, 4, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -260,7 +260,7 @@ export function VerticalCountChart({ data }: { data: CountPoint[] }) {
         <XAxis dataKey="label" {...AXIS} angle={-30} textAnchor="end" interval={0} height={48} />
         <YAxis {...AXIS} allowDecimals={false} width={36} />
         <Tooltip content={<TooltipBox />} cursor={{ fill: 'var(--chart-grid)', opacity: 0.35 }} />
-        <Bar dataKey="count" name="Cases" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="count" name="Cases" fill="var(--chart-single)" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

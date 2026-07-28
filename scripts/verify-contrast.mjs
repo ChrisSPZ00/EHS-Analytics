@@ -97,6 +97,54 @@ for (const token of expected) {
 console.log(`WCAG AA contrast check (normal text, >= ${AA_NORMAL_TEXT}:1)`);
 console.table(rows);
 
+/*
+ * Brand pairs that carry TEXT.
+ *
+ * The brand golds and the teal sit at 1.78–2.71:1 on white, so they are fills and
+ * rules only — never text on the page, and none of them appears here. What is checked
+ * is every pairing the UI actually renders words in.
+ */
+const BRAND_TEXT_PAIRS = [
+  { name: 'Body ink on page', fg: '#010133', bg: '#FFFFFF' },
+  { name: 'Primary link/button text', fg: '#1E3A8A', bg: '#FFFFFF' },
+  { name: 'Nav label on primary', fg: '#FFFFFF', bg: '#1E3A8A' },
+  { name: 'Nav muted label on primary', fg: '#CCD6EE', bg: '#1E3A8A' },
+  { name: 'White on primary button', fg: '#FFFFFF', bg: '#1E3A8A' },
+  { name: 'Ink on California Gold fill', fg: '#010133', bg: '#FDB515' },
+  { name: 'Ink on Heritage Gold fill', fg: '#010133', bg: '#C09748' },
+  { name: 'Ink on Metallic Gold fill', fg: '#010133', bg: '#BC9B6A' },
+  { name: 'Ink on Light Blue fill', fg: '#010133', bg: '#14B8A6' },
+  // Dark mode.
+  { name: 'Dark: body ink on page', fg: '#F2F4FB', bg: '#000019' },
+  { name: 'Dark: body ink on card', fg: '#F2F4FB', bg: '#010133' },
+  { name: 'Dark: muted ink on card', fg: '#B3BBD6', bg: '#010133' },
+  { name: 'Dark: ink on gold button', fg: '#010133', bg: '#FDB515' },
+  // Status callouts, both modes. These stay semantic rather than brand-coloured, so a
+  // warning never reads as a gold accent.
+  { name: 'Danger callout (light)', fg: '#b91c1c', bg: '#fef2f2' },
+  { name: 'Warning callout (light)', fg: '#92400e', bg: '#fffbeb' },
+  { name: 'Success callout (light)', fg: '#166534', bg: '#f0fdf4' },
+  { name: 'Dark: danger callout', fg: '#fca5a5', bg: '#2b0f12' },
+  { name: 'Dark: warning callout', fg: '#fcd34d', bg: '#2a2006' },
+  { name: 'Dark: success callout', fg: '#86efac', bg: '#062b16' },
+];
+
+const brandRows = BRAND_TEXT_PAIRS.map((pair) => {
+  const ratio = contrastRatio(pair.fg, pair.bg);
+  const pass = ratio >= AA_NORMAL_TEXT;
+  if (!pass) failures += 1;
+  return {
+    pair: pair.name,
+    fg: pair.fg,
+    bg: pair.bg,
+    ratio: `${ratio.toFixed(2)}:1`,
+    AA: pass ? 'PASS' : 'FAIL',
+  };
+});
+
+console.log(`\nBrand text pairs (normal text, >= ${AA_NORMAL_TEXT}:1)`);
+console.table(brandRows);
+
 if (failures > 0) {
   console.error(
     `\n${failures} hierarchy-of-controls colour pair(s) fall below WCAG AA. ` +
@@ -105,4 +153,4 @@ if (failures > 0) {
   process.exit(1);
 }
 
-console.log(`All ${rows.length} colour pairs clear WCAG AA.`);
+console.log(`All ${rows.length} hierarchy pairs and ${brandRows.length} brand text pairs clear WCAG AA.`);

@@ -9,6 +9,7 @@ import {
   MonthlyTrendChart,
   VerticalCountChart,
 } from '@/components/dashboard/charts';
+import { Logo } from '@/components/brand/logo';
 import { KpiCardPrint } from '@/components/dashboard/kpi-card';
 import { PrintButton } from '@/components/dashboard/print-button';
 import { buttonVariants } from '@/components/ui/button';
@@ -80,10 +81,15 @@ export default async function DashboardReportPage({
       </div>
 
       {/* Header block: who, where, over what period, generated when. */}
-      <header className="break-inside-avoid rounded-lg border border-border p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Incident performance report
-        </p>
+      <header className="break-inside-avoid overflow-hidden rounded-lg border border-border">
+        <div aria-hidden className="h-1.5 bg-brand-gold" />
+        <div className="p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Incident performance report
+          </p>
+          <Logo />
+        </div>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">{data.meta.orgName}</h1>
         <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-4">
           <div>
@@ -113,6 +119,7 @@ export default async function DashboardReportPage({
           rather than as zero. Each figure below carries the formula and the inputs it was
           computed from.
         </p>
+        </div>
       </header>
 
       <section className="break-inside-avoid">

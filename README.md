@@ -345,3 +345,51 @@ rather than each being internally consistent but different.
 The chart layer was rendered in a browser against fixture data and inspected in both light
 and dark mode: 22 chart surfaces, no console errors, the TRIR line correctly breaking at
 months with no hours, and Unclassified rendering as its own grey segment outside the ramp.
+
+---
+
+## Brand
+
+The supplied palette, applied unchanged. What varies is *where* each colour may be
+used, which is a contrast question rather than a taste one, so it was measured:
+
+| Role | Hex | On white | Used for |
+| --- | --- | --- | --- |
+| Primary | `#1E3A8A` | 10.36:1 | Nav bar, buttons, links, focus ring, single-series charts |
+| Blue Dark | `#010133` | 19.93:1 | Body ink; dark-mode card surface |
+| California Gold | `#FDB515` | 1.78:1 | Fill / rule only — dark-mode primary button |
+| Heritage Gold | `#C09748` | 2.71:1 | Fill / rule only |
+| Metallic Gold | `#BC9B6A` | 2.61:1 | Fill / rule only |
+| Light Blue | `#14B8A6` | 2.49:1 | Fill / rule only |
+
+The three golds and the teal cannot carry text on a white page — all four sit between
+1.78:1 and 2.71:1. They do structural work instead: the rule under the nav bar, the bar
+across the report header, the active-tab underline. All four clear 6.6–11.2:1 against
+Blue Dark, so they carry dark ink happily as *fills*. In dark mode the primary navy
+would disappear into the navy card, so buttons take California Gold with dark ink
+(11.2:1).
+
+`npm run verify:contrast` now checks 19 brand and status pairs alongside the six
+hierarchy tokens, and fails the build if any drops below WCAG AA.
+
+The golds are brand colours, not status colours. Warning and danger stay semantic and
+separate, so a gold accent never reads as an alert.
+
+### Charts keep their own palette
+
+Brand colours were run through the CVD validator as a categorical chart set and
+**failed**: navy below the lightness band, gold above it, metallic gold under the chroma
+floor (it reads grey), and three of the four below 3:1 on white. Multi-series charts
+therefore keep the validated palette. Brand identity lives in the chrome; series identity
+has to stay legible. Single-series charts — Pareto, body part, root cause, tenure — do
+wear the brand navy, where one colour is all that is needed and 10.36:1 needs no relief.
+
+Brand dark `#010133` was validated as a dark chart surface and passes, so it is the
+dark-mode card.
+
+### Logo
+
+`src/components/brand/logo.tsx` is currently a **placeholder mark**, deliberately generic
+so it cannot be mistaken for the real one. Every surface that shows a logo — nav, sign-in,
+printed report — renders through that one file, so dropping in the supplied SVG is a
+single-file change.

@@ -1,18 +1,53 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   Brand palette
+   ---------------------------------------------------------------------------
+   The supplied brand colours, unchanged. What varies is WHERE each may be used,
+   which is a contrast question rather than a taste one, so it was measured:
+
+     Primary        #1E3A8A   10.36:1 on white  -> text, links, buttons, nav
+     Blue Dark      #010133   19.93:1 on white  -> body ink, dark surface
+     California Gold #FDB515   1.78:1 on white  -> FILL/RULE ONLY, never text on white
+     Heritage Gold  #C09748    2.71:1 on white  -> FILL/RULE ONLY
+     Metallic Gold  #BC9B6A    2.61:1 on white  -> FILL/RULE ONLY
+     Light Blue     #14B8A6    2.49:1 on white  -> FILL/RULE ONLY
+
+   The four accents all clear 6.6–11.2:1 against Blue Dark, so they carry dark ink
+   happily as fills — they simply cannot be text on a white page. `npm run
+   verify:contrast` checks every pair that carries text and fails the build if one
+   slips below WCAG AA.
+
+   Note: the golds are brand colours, not status colours. Warning/danger stay
+   semantic and separate, so a gold accent never reads as an alert.
+   --------------------------------------------------------------------------- */
 :root {
+  --brand-primary: #1E3A8A;
+  --brand-dark: #010133;
+  --brand-gold: #FDB515;        /* California Gold  */
+  --brand-gold-heritage: #C09748;
+  --brand-gold-metallic: #BC9B6A;
+  --brand-teal: #14B8A6;        /* supplied as "Light Blue" */
+
+  /* Ink for anything sitting on a gold or teal fill. */
+  --brand-on-accent: #010133;
+
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #010133;
 
   --card: #ffffff;
-  --muted: #f5f5f5;
-  --muted-foreground: #57534e;
-  --border: #e4e4e7;
-  --input: #d4d4d8;
-  --ring: #0f766e;
+  --muted: #f4f6fb;
+  --muted-foreground: #4a4f63;
+  --border: #dfe3ee;
+  --input: #c8cfe2;
+  --ring: #1E3A8A;
 
-  --primary: #115e59;
+  --primary: #1E3A8A;
   --primary-foreground: #ffffff;
+
+  /* Nav sits on the primary navy; these are the two ink steps that ride on it. */
+  --on-primary: #ffffff;
+  --on-primary-muted: #ccd6ee;
 
   --danger: #b91c1c;
   --danger-bg: #fef2f2;
@@ -50,9 +85,19 @@
   --chart-seq-550: #1c5cab;
   --chart-seq-700: #0d366b;
 
+  /*
+   * Single-series charts wear the brand navy — one series, one colour, and at
+   * 10.36:1 on white it needs no relief. The four categorical slots above are NOT
+   * replaced by brand colours: run the brand palette through the validator as a
+   * series set and it fails outright (navy below the lightness band, gold above it,
+   * metallic gold under the chroma floor, three of four below 3:1 on white). Brand
+   * identity lives in the chrome; series identity has to stay legible.
+   */
+  --chart-single: #1E3A8A;
+
   --chart-grid: #e1e0d9;
   --chart-axis: #c3c2b7;
-  --chart-ink: #52514e;
+  --chart-ink: #4a4f63;
   /* Stacked segments are separated by a gap in the surface colour, never a border. */
   --chart-surface: #ffffff;
 }
@@ -108,6 +153,16 @@
   --color-success-bg: var(--success-bg);
   --color-success-border: var(--success-border);
 
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-gold: var(--brand-gold);
+  --color-brand-gold-heritage: var(--brand-gold-heritage);
+  --color-brand-gold-metallic: var(--brand-gold-metallic);
+  --color-brand-teal: var(--brand-teal);
+  --color-brand-on-accent: var(--brand-on-accent);
+  --color-on-primary: var(--on-primary);
+  --color-on-primary-muted: var(--on-primary-muted);
+
   /* Exposed as utilities: bg-hoc-3-bg, text-hoc-3-fg, border-hoc-3-bg, ... */
   --color-hoc-0-bg: var(--hoc-0-bg);
   --color-hoc-0-fg: var(--hoc-0-fg);
@@ -125,26 +180,58 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Cards carry the brand dark navy; the page plane sits a step below it.
+       Charts render on the card, and the categorical slots below were validated
+       against exactly that surface. */
+    --background: #000019;
+    --foreground: #f2f4fb;
 
-    --card: #141414;
-    --muted: #1e1e1e;
-    --muted-foreground: #a1a1aa;
-    --border: #2c2c2a;
-    --input: #3f3f46;
+    --card: #010133;
+    --muted: #0b1045;
+    --muted-foreground: #b3bbd6;
+    --border: #1c2258;
+    --input: #2b3272;
+    --ring: #FDB515;
+
+    /* On a navy card the primary navy would disappear, so buttons take the gold
+       with dark ink — 11.2:1, and the strongest brand signal available here. */
+    --primary: #FDB515;
+    --primary-foreground: #010133;
+
+    --on-primary: #ffffff;
+    --on-primary-muted: #ccd6ee;
 
     /* The same four hues re-stepped for the dark surface, not an automatic flip.
-       Validated against #0a0a0a: worst adjacent CVD ΔE 8.4, all four clear 3:1. */
+       Validated against #010133: worst adjacent CVD ΔE 8.4, all four clear 3:1. */
     --chart-1: #3987e5;
     --chart-2: #d95926;
     --chart-3: #199e70;
     --chart-4: #c98500;
 
-    --chart-grid: #2c2c2a;
-    --chart-axis: #383835;
-    --chart-ink: #c3c2b7;
-    --chart-surface: #141414;
+    /* Brand navy is only 1.92:1 on the navy card, so the single-series colour
+       steps up to the lighter brand blue here. */
+    --chart-single: #3987e5;
+
+    --chart-grid: #1c2258;
+    --chart-axis: #2b3272;
+    --chart-ink: #b3bbd6;
+    --chart-surface: #010133;
+
+    /* Status colours need their own dark steps. Without these the callouts keep
+       their light fills and read as bright chips punched out of a dark page. They
+       stay semantic — deliberately not brand golds, so a warning never looks like
+       an accent and an accent never looks like a warning. */
+    --danger: #fca5a5;
+    --danger-bg: #2b0f12;
+    --danger-border: #5f2126;
+
+    --warning: #fcd34d;
+    --warning-bg: #2a2006;
+    --warning-border: #5c460b;
+
+    --success: #86efac;
+    --success-bg: #062b16;
+    --success-border: #14532d;
   }
 }
 
