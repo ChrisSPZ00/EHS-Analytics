@@ -54,6 +54,17 @@ Badges always render the label text. Colour never carries meaning on its own —
 five-step single-hue ramp is not distinguishable under red-green colour vision
 deficiency, and this is a safety product.
 
+## Brand
+
+Palette tokens live at the top of `globals.css` with the measured contrast of each
+colour beside it. The golds and the teal sit at 1.78–2.71:1 on white, so they are fills
+and rules only — never text on a light surface. `verify:contrast` checks every pair the
+UI renders words in, both modes.
+
+Logo artwork is a drop-in at `public/brand/` (primary + reversed), detected at start-up
+and rendered through `src/components/brand/logo.tsx` — the single seam for nav, sign-in
+and the printed report. See `docs/brand-assets.md`.
+
 ## Next.js version note
 
 This project pins Next.js 15 (the scaffolder defaults to 16). Check `package.json` before

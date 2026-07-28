@@ -1,20 +1,29 @@
 import { cn } from '@/lib/utils';
 
 /**
- * ============================================================================
- * PLACEHOLDER MARK — replace with the supplied logo SVG.
- * ============================================================================
+ * Every surface that shows the brand — nav, sign-in, printed report — renders
+ * through this file, so artwork changes happen in one place.
  *
- * The brand SVG did not reach the working tree, so this is a temporary stand-in
- * built only from the brand palette. It is deliberately generic rather than an
- * invented logo: nothing here should be mistaken for the real mark.
+ * Supplied artwork is picked up from `public/brand/` at build time (see
+ * `next.config.ts` and `docs/brand-assets.md`). Two slots:
  *
- * To drop the real one in, replace the <svg> in `LogoMark` below and nothing
- * else — every surface (nav, sign-in, printed report) renders through this file,
- * so the swap happens in one place. If the supplied artwork is a full lockup
- * including the wordmark, set `withWordmark={false}` at the call sites, or just
- * render the artwork here and delete the <span>.
+ *   logo.*            the primary lockup, for white/light surfaces
+ *   logo-reversed.*   the knockout version, for the navy nav bar
+ *
+ * When a slot is empty the built-in `LogoMark` below stands in. That fallback is
+ * deliberately generic geometry from the brand palette — it is a placeholder, not
+ * an invented mark, and nothing should be mistaken for the real logo.
+ *
+ * The two slots are separate on purpose. The supplied lockup has an opaque white
+ * background, so dropping it onto the navy header would render a white box around
+ * the mark. Artwork for a dark surface has to be artwork made for a dark surface;
+ * there is no CSS that removes a baked-in background. Until a reversed version
+ * exists the nav keeps the placeholder mark and the typographic wordmark, which
+ * both sit at 10.36:1 on the navy.
  */
+
+const LOGO = process.env.NEXT_PUBLIC_BRAND_LOGO || '';
+const LOGO_REVERSED = process.env.NEXT_PUBLIC_BRAND_LOGO_REVERSED || '';
 
 export function LogoMark({ className }: { className?: string }) {
   return (
@@ -38,6 +47,23 @@ export function LogoMark({ className }: { className?: string }) {
   );
 }
 
+/**
+ * Supplied artwork. Rendered with a plain <img> rather than next/image: the file
+ * is dropped in by hand, so its intrinsic dimensions are not known at build time,
+ * and an SVG lockup gains nothing from the optimiser. `h-* w-auto` lets a wide
+ * horizontal lockup keep its own aspect ratio instead of being forced square.
+ */
+function LogoAsset({ src, className }: { src: string; className?: string }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt="SafePulse Analytics"
+      className={cn('w-auto max-w-[13rem] shrink-0 object-contain', className)}
+    />
+  );
+}
+
 export function Logo({
   className,
   withWordmark = true,
@@ -48,6 +74,14 @@ export function Logo({
   /** `onPrimary` for the navy nav bar, where the wordmark must be white. */
   tone?: 'default' | 'onPrimary';
 }) {
+  const asset = tone === 'onPrimary' ? LOGO_REVERSED : LOGO;
+
+  // A supplied lockup already contains the wordmark, so the typographic one is
+  // dropped rather than doubled up alongside it.
+  if (asset) {
+    return <LogoAsset src={asset} className={cn('h-8', className)} />;
+  }
+
   return (
     <span className={cn('inline-flex items-center gap-2', className)}>
       <LogoMark />
