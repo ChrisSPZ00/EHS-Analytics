@@ -138,6 +138,10 @@ const BRAND_TEXT_PAIRS = [
   { name: 'Dark: danger callout', fg: '#fca5a5', bg: '#2b0f12' },
   { name: 'Dark: warning callout', fg: '#fcd34d', bg: '#2a2006' },
   { name: 'Dark: success callout', fg: '#86efac', bg: '#062b16' },
+  // The neutral chip the compliance calendar uses for "Upcoming" — the one due state
+  // with no status colour, because nothing is wrong with it.
+  { name: 'Muted chip (light)', fg: '#4a4f63', bg: '#f4f6fb' },
+  { name: 'Dark: muted chip', fg: '#b3bbd6', bg: '#0b1045' },
 ];
 
 const brandRows = BRAND_TEXT_PAIRS.map((pair) => {

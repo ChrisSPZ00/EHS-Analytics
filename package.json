@@ -11,7 +11,8 @@
     "verify:contrast": "node scripts/verify-contrast.mjs",
     "types:generate": "echo \"Regenerate via the Supabase MCP generate_typescript_types tool, or: supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > src/lib/supabase/database.types.ts\"",
     "verify:import": "tsx scripts/verify-import-pipeline.ts",
-    "verify:metrics": "tsx scripts/verify-metrics.ts"
+    "verify:metrics": "tsx scripts/verify-metrics.ts",
+    "verify:compliance": "tsx scripts/verify-compliance.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.5.7",

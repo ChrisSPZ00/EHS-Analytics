@@ -415,6 +415,148 @@ insert into tap_out (line) select is(
 
 
 -- ===========================================================================
+-- Compliance calendar
+-- ===========================================================================
+--
+-- The generator writes rows on the caller's behalf, which makes it the one place in the
+-- schema where a tenant boundary could be crossed by something other than a direct
+-- insert. It runs SECURITY INVOKER, so RLS decides what it can see, and the assertions
+-- below prove that holds -- including the case where a caller passes another tenant's
+-- obligation id, which must be indistinguishable from passing a nonexistent one.
+
+-- Still acting as Org A owner.
+set local request.jwt.claims = '{"sub":"aaaaaaaa-0000-4000-8000-000000000001","role":"authenticated"}';
+
+insert into tap_out (line) select is(
+  (select count(*) from public.compliance_events_enriched)::int, 1,
+  'COMPLIANCE: compliance_events_enriched is org-scoped (security_invoker holds)'
+);
+
+insert into tap_out (line) select is(
+  (select count(*) from public.compliance_obligations_enriched)::int, 1,
+  'COMPLIANCE: compliance_obligations_enriched is org-scoped'
+);
+
+-- Creating an obligation generates its dated entries by trigger, and they must be stamped
+-- with the caller's org -- not with whatever the payload claimed.
+insert into public.compliance_obligations
+  (id, organization_id, site_id, jurisdiction, obligation, frequency, due_date)
+values
+  ('a8000000-0000-4000-8000-0000000000ff',
+   'b0000000-0000-4000-8000-00000000000b',   -- forged: Org B
+   'a1000000-0000-4000-8000-00000000000a',
+   'Federal', 'Quarterly discharge sampling', 'Quarterly', current_date);
+
+insert into tap_out (line) select is(
+  (select organization_id from public.compliance_obligations
+   where id = 'a8000000-0000-4000-8000-0000000000ff'),
+  'a0000000-0000-4000-8000-00000000000a'::uuid,
+  'COMPLIANCE: a forged organization_id on an obligation is overwritten'
+);
+
+insert into tap_out (line) select ok(
+  (select count(*) from public.compliance_events
+   where obligation_id = 'a8000000-0000-4000-8000-0000000000ff')::int > 0,
+  'COMPLIANCE: creating an obligation generates its calendar entries'
+);
+
+insert into tap_out (line) select is_empty(
+  $$ select ce.id::text from public.compliance_events ce
+     where ce.obligation_id = 'a8000000-0000-4000-8000-0000000000ff'
+       and ce.organization_id <> 'a0000000-0000-4000-8000-00000000000a' $$,
+  'COMPLIANCE: every generated entry carries the caller''s own organization_id'
+);
+
+-- Re-running the generator cannot duplicate a date.
+insert into tap_out (line) select is(
+  public.generate_compliance_events('a8000000-0000-4000-8000-0000000000ff'), 0,
+  'COMPLIANCE: the generator is idempotent -- a second run creates nothing'
+);
+
+-- The frequencies that describe a standing duty rather than a dated task must never
+-- acquire a date, whatever is passed alongside them.
+insert into public.compliance_obligations
+  (id, organization_id, jurisdiction, obligation, frequency, due_date)
+values
+  ('a8000000-0000-4000-8000-0000000000fe',
+   'a0000000-0000-4000-8000-00000000000a',
+   'Federal', 'Maintain the written PPE hazard assessment', 'Ongoing', current_date);
+
+insert into tap_out (line) select is(
+  (select count(*) from public.compliance_events
+   where obligation_id = 'a8000000-0000-4000-8000-0000000000fe')::int, 0,
+  'COMPLIANCE: an Ongoing obligation generates no dates, even carrying a due_date'
+);
+
+-- No anchor means no dates. The tempting bug is to invent a plausible one.
+insert into public.compliance_obligations
+  (id, organization_id, jurisdiction, obligation, frequency)
+values
+  ('a8000000-0000-4000-8000-0000000000fd',
+   'a0000000-0000-4000-8000-00000000000a',
+   'State', 'Renew the state air permit', 'Every 4 years');
+
+insert into tap_out (line) select is(
+  (select count(*) from public.compliance_events
+   where obligation_id = 'a8000000-0000-4000-8000-0000000000fd')::int, 0,
+  'COMPLIANCE: an obligation with no due date and no recurrence anchor generates nothing'
+);
+
+-- Completed history survives a schedule change; untouched future placeholders do not.
+update public.compliance_events
+   set status = 'Compliant', completed_date = current_date, completed_by = 'Owner A'
+ where obligation_id = 'a8000000-0000-4000-8000-0000000000ff'
+   and due_date = current_date;
+
+update public.compliance_obligations
+   set frequency = 'Annual', due_date = current_date + 40
+ where id = 'a8000000-0000-4000-8000-0000000000ff';
+
+insert into tap_out (line) select is(
+  (select count(*) from public.compliance_events
+   where obligation_id = 'a8000000-0000-4000-8000-0000000000ff'
+     and completed_date is not null)::int, 1,
+  'COMPLIANCE: a completed entry survives a change to the obligation''s schedule'
+);
+
+insert into tap_out (line) select is(
+  (select count(*) from public.compliance_events
+   where obligation_id = 'a8000000-0000-4000-8000-0000000000ff'
+     and due_date = current_date + 40)::int, 1,
+  'COMPLIANCE: and the new schedule''s dates are generated'
+);
+
+-- "Compliant" with no date recorded is an assertion, not an audit trail.
+insert into tap_out (line) select throws_ok(
+  $$ update public.compliance_events set status = 'Compliant', completed_date = null
+      where id = 'a9000000-0000-4000-8000-00000000000a' $$,
+  '23514',
+  null,
+  'COMPLIANCE: a Compliant entry cannot be saved without a completion date'
+);
+
+-- The generator called against another tenant's obligation: RLS makes it look like an id
+-- that does not exist, which is exactly what it should look like.
+insert into tap_out (line) select is(
+  public.generate_compliance_events('b8000000-0000-4000-8000-00000000000b'), 0,
+  'COMPLIANCE: the generator does nothing for another tenant''s obligation id'
+);
+
+insert into tap_out (line) select is(
+  (select count(*) from public.compliance_events
+   where obligation_id = 'b8000000-0000-4000-8000-00000000000b'
+     and organization_id = 'a0000000-0000-4000-8000-00000000000a')::int, 0,
+  'COMPLIANCE: and it creates nothing under the caller''s org either'
+);
+
+-- Regenerating another tenant's obligation must not delete their future entries.
+insert into tap_out (line) select is(
+  public.regenerate_compliance_events('b8000000-0000-4000-8000-00000000000b'), 0,
+  'COMPLIANCE: regeneration does nothing for another tenant''s obligation id'
+);
+
+
+-- ===========================================================================
 -- Role enforcement: viewer is read-only
 -- ===========================================================================
 
@@ -472,6 +614,13 @@ insert into tap_out (line) select is(
 insert into tap_out (line) select is(
   (select count(*) from public.corrective_actions)::int, 1,
   'READ: Org B corrective action survived Org A''s delete attempt'
+);
+
+-- Asserted from Org B's own session deliberately: counting Org B's rows from Org A would
+-- return zero whether they survived or not, which proves nothing.
+insert into tap_out (line) select is(
+  (select count(*) from public.compliance_events)::int, 1,
+  'READ: Org B calendar entry survived Org A''s regeneration attempt'
 );
 
 

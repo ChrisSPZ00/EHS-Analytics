@@ -31,12 +31,13 @@ Next.js 15 (App Router) + TypeScript + Tailwind + Supabase.
 ## Checks
 
 ```
-npm run typecheck        # tsc --noEmit
-npm run lint             # eslint
-npm run verify:contrast  # WCAG AA check on the hierarchy-of-controls tokens; runs in build
+npm run typecheck         # tsc --noEmit
+npm run lint              # eslint
+npm run verify:contrast   # WCAG AA check on the hierarchy-of-controls tokens; runs in build
+npm run verify:compliance # recurrence maths and due states
 ```
 
-Tenant isolation is proven by `supabase/tests/rls.sql` — 51 assertions, safe to run
+Tenant isolation is proven by `supabase/tests/rls.sql` — 67 assertions, safe to run
 against any environment (it rolls back).
 
 ## Hierarchy of controls
@@ -53,6 +54,32 @@ token 0 is the neutral grey for Unclassified and sits outside the green ramp.
 Badges always render the label text. Colour never carries meaning on its own — a
 five-step single-hue ramp is not distinguishable under red-green colour vision
 deficiency, and this is a safety product.
+
+## Compliance calendar
+
+**A due date is never invented.** An obligation with neither `due_date` nor a recurrence
+anchor generates nothing; `Ongoing` and `Per event` generate nothing ever. Both are
+first-class states with a visible explanation in the UI — never an empty row, never a
+guessed date.
+
+**Regeneration never destroys work.** `regenerate_compliance_events()` removes only
+untouched future placeholders (`Not Started`, no `completed_date`, no `completed_by`, no
+`evidence_notes`). Completed, annotated and past entries survive a schedule change. Do not
+widen that delete.
+
+The generator lives in SQL because it runs inside the trigger on `compliance_obligations`.
+`src/lib/domain/compliance.ts` is the application-side mirror and exists so the form can
+preview dates; if you change one, change both — `npm run verify:compliance` cross-checks
+them against dates read back from the SQL generator.
+
+Instances sit on the lattice `anchor + n × step`, recomputed from the anchor every time.
+Never step from the previous instance: Postgres clamps 31 January + 1 month to 28
+February, and stepping on from the clamped date walks the obligation off its own day of
+the month for good.
+
+`completed_on_time` is NULL, not false, for an open entry — it leaves the on-time
+denominator rather than counting as a miss, the same rule `is_engineering_or_above`
+follows.
 
 ## Brand
 

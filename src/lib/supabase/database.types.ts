@@ -100,6 +100,13 @@ export type Database = {
             referencedColumns: ["id", "organization_id"]
           },
           {
+            foreignKeyName: "compliance_events_obligation_id_organization_id_fkey"
+            columns: ["obligation_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_obligations_enriched"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
             foreignKeyName: "compliance_events_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -801,6 +808,108 @@ export type Database = {
       }
     }
     Views: {
+      compliance_events_enriched: {
+        Row: {
+          agency: string | null
+          citation: string | null
+          completed_by: string | null
+          completed_date: string | null
+          completed_on_time: boolean | null
+          created_at: string | null
+          days_until_due: number | null
+          due_date: string | null
+          evidence_notes: string | null
+          frequency: Database["public"]["Enums"]["obligation_frequency"] | null
+          id: string | null
+          is_verified: boolean | null
+          jurisdiction: Database["public"]["Enums"]["jurisdiction"] | null
+          lead_time_days: number | null
+          obligation: string | null
+          obligation_id: string | null
+          organization_id: string | null
+          permit_ref: string | null
+          program_area: string | null
+          responsible_party: string | null
+          site_id: string | null
+          site_name: string | null
+          state: string | null
+          state_rank: number | null
+          status: Database["public"]["Enums"]["obligation_status"] | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_events_obligation_id_organization_id_fkey"
+            columns: ["obligation_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_obligations"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "compliance_events_obligation_id_organization_id_fkey"
+            columns: ["obligation_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_obligations_enriched"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "compliance_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compliance_obligations_enriched: {
+        Row: {
+          agency: string | null
+          citation: string | null
+          completed_events: number | null
+          created_at: string | null
+          due_date: string | null
+          frequency: Database["public"]["Enums"]["obligation_frequency"] | null
+          id: string | null
+          is_scheduled: boolean | null
+          is_verified: boolean | null
+          jurisdiction: Database["public"]["Enums"]["jurisdiction"] | null
+          last_completed_date: string | null
+          lead_time_days: number | null
+          next_due_date: string | null
+          next_event_id: string | null
+          next_state: string | null
+          notes: string | null
+          obligation: string | null
+          open_events: number | null
+          organization_id: string | null
+          overdue_events: number | null
+          permit_ref: string | null
+          program_area: string | null
+          recurrence_day: number | null
+          recurrence_month: number | null
+          responsible_party: string | null
+          site_id: string | null
+          site_name: string | null
+          status: Database["public"]["Enums"]["obligation_status"] | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_obligations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_obligations_site_id_organization_id_fkey"
+            columns: ["site_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
       corrective_actions_enriched: {
         Row: {
           assigned_to_name: string | null
@@ -1029,12 +1138,60 @@ export type Database = {
         Returns: string
       }
       can_write: { Args: never; Returns: boolean }
+      compliance_anchor_date: {
+        Args: {
+          p_as_of?: string
+          p_due_date: string
+          p_frequency: Database["public"]["Enums"]["obligation_frequency"]
+          p_recurrence_day: number
+          p_recurrence_month: number
+        }
+        Returns: string
+      }
+      compliance_event_state: {
+        Args: {
+          p_as_of?: string
+          p_completed_date: string
+          p_due_date: string
+          p_lead_time_days: number
+        }
+        Returns: string
+      }
+      compliance_generation_window: {
+        Args: {
+          p_frequency: Database["public"]["Enums"]["obligation_frequency"]
+        }
+        Returns: Record<string, unknown>
+      }
+      compliance_month_day: {
+        Args: { p_day: number; p_month: number; p_year: number }
+        Returns: string
+      }
+      compliance_recurrence_step: {
+        Args: {
+          p_frequency: Database["public"]["Enums"]["obligation_frequency"]
+        }
+        Returns: string
+      }
+      compliance_state_rank: { Args: { p_state: string }; Returns: number }
       current_org_id: { Args: never; Returns: string }
       current_org_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      generate_compliance_events: {
+        Args: { p_as_of?: string; p_obligation_id: string }
+        Returns: number
+      }
       is_org_admin: { Args: never; Returns: boolean }
+      refresh_compliance_calendar: {
+        Args: { p_as_of?: string }
+        Returns: number
+      }
+      regenerate_compliance_events: {
+        Args: { p_as_of?: string; p_obligation_id: string }
+        Returns: number
+      }
     }
     Enums: {
       corrective_action_status:

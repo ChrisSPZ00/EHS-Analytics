@@ -28,6 +28,7 @@ npm run lint             # eslint
 npm run verify:contrast  # WCAG AA on the hierarchy-of-controls tokens (runs in build)
 npm run verify:import    # CSV import pipeline against a deliberately messy fixture
 npm run verify:metrics   # metric formulas, incl. a cross-check against SQL-derived figures
+npm run verify:compliance # recurrence maths and due states, cross-checked against SQL
 ```
 
 ## Build status
@@ -37,7 +38,7 @@ npm run verify:metrics   # metric formulas, incl. a cross-check against SQL-deri
 | 1 | Schema and RLS foundation | Complete |
 | 2 | Incident Log (table, forms, CSV import) | Complete |
 | 3 | Incident Dashboard | Complete |
-| 4 | Compliance Calendar | Not started |
+| 4 | Compliance Calendar | Complete |
 | 5 | Polish, seed data, deploy | Not started |
 
 ---
@@ -345,6 +346,167 @@ rather than each being internally consistent but different.
 The chart layer was rendered in a browser against fixture data and inspected in both light
 and dark mode: 22 chart surfaces, no console errors, the TRIR line correctly breaking at
 months with no hours, and Unclassified rendering as its own grey segment outside the ramp.
+
+---
+
+## Phase 4 — Compliance Calendar
+
+Two tables, and the whole module is the relationship between them. `compliance_obligations`
+is the standing requirement — "file the Tier II report every year" — and
+`compliance_events` holds the dated instances generated from it. A user never types a date
+into the calendar; they describe the obligation once, and the dates follow.
+
+### The recurrence engine
+
+The generator is SQL, in `20260729012518_compliance_calendar_engine.sql`, because it runs
+inside the trigger that keeps the calendar in step with the register. Adding an obligation
+generates its dates; editing its schedule regenerates them. Nothing in the application can
+forget to call it.
+
+Three rules shape it, and each is asserted rather than assumed:
+
+- **A date is never invented.** An obligation carrying neither a due date nor a recurrence
+  anchor generates nothing at all. `Ongoing` and `Per event` generate nothing ever — they
+  are real obligations with no dated instances, and putting one on a calendar would assert
+  something the permit does not say. Both cases surface in the UI as a sentence explaining
+  why, not as an empty row.
+- **Regeneration never destroys work.** Changing a schedule removes only *untouched* future
+  placeholders — still `Not Started`, no completion date, no `completed_by`, no evidence
+  note. Anything somebody has started, annotated or closed survives, even when its date is
+  no longer on the new lattice. Past instances survive too: an instance that came and went
+  unsatisfied is a compliance gap, and deleting it would erase the record of it.
+- **Re-running it changes nothing.** `ON CONFLICT (obligation_id, due_date) DO NOTHING`
+  against the table's own unique constraint, so the generator is idempotent by
+  construction rather than by care.
+
+Instances sit on the lattice `anchor + n × step`, always recomputed from the anchor.
+Postgres clamps 31 January + 1 month to 28 February; stepping on from the *clamped* date
+would walk a monthly obligation off its own day of the month permanently. Computing from
+the anchor every time means February clamps and March returns to the 31st.
+
+The window is scaled to the frequency — a daily walkaround materialises 14 days back and
+45 forward, a five-year permit renewal ten years each way. The lookback exists so that an
+instance which is *already overdue* appears on the calendar, not only future ones. Because
+the window is measured from today, a calendar left alone eventually runs short of future;
+`refresh_compliance_calendar()` tops it back up and is wired to an **Extend calendar**
+button, and completing an entry quietly extends its own obligation.
+
+| frequency | step | lookback | horizon |
+| --- | --- | --- | --- |
+| Daily | 1 day | 14 days | 45 days |
+| Weekly | 7 days | 8 weeks | 26 weeks |
+| Monthly | 1 month | 12 months | 12 months |
+| Quarterly | 3 months | 12 months | 24 months |
+| Semi-annual | 6 months | 24 months | 24 months |
+| Annual | 1 year | 24 months | 36 months |
+| Biennial | 2 years | 48 months | 60 months |
+| Every 4 years | 4 years | 96 months | 120 months |
+| 5-year cycle | 5 years | 120 months | 120 months |
+| One-time | — | the due date, however far out it sits | |
+| Ongoing / Per event | — | no dated instances, by definition | |
+
+Weekly and daily obligations still need a first date. The schema has no day-of-week
+column, so without one there is nothing to count from — and the generator will not pick a
+start for you. The seed models this rather than working around it.
+
+### Due state
+
+Four states, derived from dates alone: **Overdue**, **Due soon**, **Upcoming**, **Complete**.
+Lead time is per obligation, because the notice a Tier II filing needs is not the notice a
+weekly eyewash flush needs; 30 days is only the default.
+
+Two things are deliberately *not* folded into that derivation:
+
+- **`is_verified`** — whether a human has checked the entry against the permit text. An
+  unverified obligation is not "less overdue". It carries its own badge.
+- **The `N/A - Verify` status** — "we believe this does not apply, but nobody has
+  confirmed it". Reading that as compliant would hide exactly the row that most needs
+  looking at.
+
+`completed_on_time` lives in the view beside the state, so "on time" has one definition.
+It is `NULL` — not `false` — for an entry that is not yet complete, the same shape as
+`is_engineering_or_above` for unclassified actions: an open entry has no on-time answer
+yet and leaves the denominator rather than counting as a miss.
+
+### The views
+
+`compliance_events_enriched` and `compliance_obligations_enriched`, both
+`WITH (security_invoker = on)`. The obligation view carries its next open instance, its
+open and overdue counts, the date it was last satisfied, and `is_scheduled` — false for
+the two frequencies that have no dates, so the register can say so instead of showing a
+blank.
+
+### The screens
+
+**Month grid**, **look-ahead list** and **obligation register**, sharing one filter set
+that lives in the URL — so a particular month with a particular filter is a link somebody
+can send to a colleague, and the CSV export is that same link with a different path.
+
+The grid gives shape; the table beneath it is the twin that holds every field, prints, and
+reads on a phone. Nothing on the grid is reachable by colour alone: each entry names its
+obligation, and the state is spelled out for a screen reader. Overdue and Due soon are red
+and amber — the exact pair red-green colour vision deficiency confuses — so they have to
+survive the colour being taken away, and they do.
+
+The register groups by jurisdiction then programme area, which is how EHS managers hold
+their obligations in their heads and how the table is indexed. Unverified rows carry a
+warning badge; verified ones carry a plain outlined one, so the two differ in shape and
+not only in colour.
+
+The obligation form previews its own schedule: change the frequency or the date and the
+dates it will generate appear immediately, before saving. That is the difference between a
+recurrence rule a client trusts and one they have to reverse-engineer from the calendar
+afterwards. When the answer is "no dates", the panel says why — and the save still goes
+through, because an obligation transcribed from a permit before its deadline is known is
+still worth recording.
+
+Evidence lives on the entry, not the obligation. "We do this annually" and "here is who
+did it in 2026, on what date, and what they filed" are different claims, and only the
+second survives an inspection.
+
+### Metrics
+
+Overdue, Due soon, Completed on time, Verified against source, and Not on the calendar —
+each with its formula, its inputs and its interpretation, through the same `KpiCard` the
+dashboard uses. They are labelled as program signals, not regulatory metrics, and the same
+two rules apply: nothing is extrapolated, and a missing denominator is an em dash. A client
+who has completed nothing has no on-time rate — that is not 0%, and rendering it as 0%
+would put a damning number in front of them that the data does not support.
+
+**Verified against source** is the one that matters most. A calendar built from memory
+rather than from the permit text is a liability, not an asset; below 50% coverage the card
+mutes itself and says so.
+
+### Verification
+
+`npm run verify:compliance` runs 114 assertions: the date arithmetic (month-end clamping,
+leap years, lattice drift), every refusal-to-guess path, the due-state thresholds including
+both boundaries and a zero lead time, the metric rules, and the month grid.
+
+The last block is a cross-check against the database. The generator that actually runs is
+the SQL one, so six obligations were generated in a transaction that rolls back, their
+dates read back out of `compliance_events`, and those exact counts and endpoints asserted
+against the TypeScript mirror. Both sides agree — including the hardest case, a monthly
+obligation anchored seven years before its window, where SQL has to jump to the right
+instance rather than walk to it.
+
+`supabase/tests/rls.sql` grows from 51 assertions to 67. The new ones cover the generator
+specifically, because it is the one place in the schema that writes rows on a caller's
+behalf: a forged `organization_id` on an obligation is overwritten and its generated
+entries are stamped with the caller's own org; calling the generator with another tenant's
+obligation id returns 0 and writes nothing, which is indistinguishable from passing an id
+that does not exist; regeneration cannot reach another tenant's entries — asserted from
+Org B's own session, since counting Org B's rows from Org A would return zero whether they
+survived or not.
+
+### Demo data
+
+The seed adds 17 synthetic obligations across five programme areas and every frequency,
+about a third unverified, one deliberately left with no date at all so the
+"cannot be scheduled" state is visible. It inserts **only** the obligations — the dated
+entries come from the trigger, so the demo calendar is built by exactly the code path a
+client's would be. Past entries are then mostly closed out, a minority late and a minority
+left open, so the on-time rate is a real number rather than a suspicious 100%.
 
 ---
 
